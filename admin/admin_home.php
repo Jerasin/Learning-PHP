@@ -4,7 +4,7 @@ require_once '../connection.php';
 session_start();
 
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
-if (!isset($_SESSION['admin_login'])) {
+if (!isset($_SESSION['id'])) {
     header('location: ../index.php');
 }
 
@@ -61,7 +61,7 @@ if (isset($_REQUEST['id'])) {
                         <li class="nav-item">
                             <p class="nav-link btn btn-outline-white my-2">
                                 <?php
-                                echo $_SESSION['admin_login']
+                                echo $_SESSION['email']
                                 ?>
                             </p>
                         </li>
@@ -70,11 +70,6 @@ if (isset($_REQUEST['id'])) {
                             <a href="../logout.php" class="nav-link btn btn-danger text-white my-2 w-100">Logout</a>
                         </li>
                     </ul>
-
-                    <div class="d-lg-flex">
-
-
-                    </div>
                 </div>
             </div>
         </nav>
@@ -92,7 +87,7 @@ if (isset($_REQUEST['id'])) {
 
         <div class="row m-0 mt-3">
             <div class="col-md-2">
-                <a href="../add.php" class="btn btn-success w-100 mb-2">Add Book</a>
+                <a href="../book_list.php" class="btn btn-success w-100 mb-2">Book List</a>
 
                 <a href="#" class="btn btn-warning w-100 mb-2">Add Category</a>
                 <div class="border border-2 border-light">

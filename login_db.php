@@ -22,13 +22,14 @@ if (empty($username)) {
     $errorMsg = "Please Enter Role";
 } else if ($username and $email and $password and $role) {
     try {
-        $select_user = $db->prepare("SELECT username, email , password , role FROM user_info WHERE email = :uemail AND username = :uusername  AND role = :urole");
+        $select_user = $db->prepare("SELECT  id , username, email , password , role FROM user_info WHERE email = :uemail AND username = :uusername  AND role = :urole");
         $select_user->bindParam(":uusername", $username);
         $select_user->bindParam(":uemail", $email);
         $select_user->bindParam(":urole", $role);
         $select_user->execute();
 
         while ($row = $select_user->fetch(PDO::FETCH_ASSOC)) {
+            $id = $row['id'];
             $dbusername = $row['username'];
             $dbemail = $row['email'];
             $dbpassword = $row['password'];
@@ -36,14 +37,21 @@ if (empty($username)) {
         }
 
         if ($username != null and $email != null and $password != null and $role != null) {
+            // echo $select_user->rowCount();
             if ($select_user->rowCount() > 0) {
                 $hash = password_verify($password, $dbpassword);
+
+                if (empty($hash)) {
+                    $_SESSION['error'] = "Wrong username or email or password or role";
+                    header("location: index.php");
+                }
 
                 if ($username == $dbusername and $email == $dbemail and $hash  and $role == $dbrole) {
 
                     switch ($dbrole) {
                         case '1':
-                            $_SESSION['admin_login'] = $email;
+                            $_SESSION['id'] = $id;
+                            $_SESSION['email'] = $email;
                             $_SESSION['success'] = "Admin Login Successfully...";
                             header("location: admin/admin_home.php");
                             break;

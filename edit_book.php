@@ -2,7 +2,7 @@
 require_once 'connection.php';
 session_start();
 
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION['admin_login'])) {
   header('location: ../index.php');
 }
 
@@ -31,13 +31,7 @@ if (isset($_REQUEST['btn_update'])) {
   $category = $_REQUEST['category'];
   $updatedBy = $_REQUEST['updatedBy'];
 
-  if (isset($_FILES['image']['name'])) {
-    $image_file = $_FILES['image']['name'];
-    $type = $_FILES['image']['type'];
-    $size = $_FILES['image']['size'];
-    $temp = $_FILES['image']['tmp_name'];
-    $path = "upload/" . $image_file; // set upload folder path
-  }
+
   if (empty($name)) {
     $errorMsg = "Please enter Name";
   } else  if (empty($price)) {
@@ -51,49 +45,77 @@ if (isset($_REQUEST['btn_update'])) {
   } else  if (empty($updatedBy)) {
     $errorMsg = "Please enter UpdatedBy";
   } else {
-    try {
-      if (isset($image_file)) {
-        echo "Running";
-        if ($type == "image/jpg" || $type == 'image/jpeg' || $type == "image/png" || $type == "image/gif") {
-          if (!file_exists($path)) { // check file not exist in your upload folder path
-            if ($size < 5000000) { // check file size 5MB
-              // Delete Image Old
-              $book = $select_books->fetch(PDO::FETCH_ASSOC);
-              $path_delete = "upload/" .  $book['image']; // set delete folder path
-              unlink($path_delete);
 
-              // Create Image New
-              move_uploaded_file($temp, 'upload/' . $image_file); // move upload file temperory directory to your upload folder
+    if ($_FILES['image']['name']) {
+      $image_file = $_FILES['image']['name'];
+      $type = $_FILES['image']['type'];
+      $size = $_FILES['image']['size'];
+      $temp = $_FILES['image']['tmp_name'];
+      $path = "upload/" . $image_file; // set upload folder path
+      try {
+        if (isset($image_file)) {
+          if ($type == "image/jpg" || $type == 'image/jpeg' || $type == "image/png" || $type == "image/gif") {
+            if (!file_exists($path)) { // check file not exist in your upload folder path
+              if ($size < 5000000) { // check file size 5MB
+                // Delete Image Old
+                $book = $select_books->fetch(PDO::FETCH_ASSOC);
+                $path_delete = "upload/" .  $book['image']; // set delete folder path
+                unlink($path_delete);
+
+                // Create Image New
+                move_uploaded_file($temp, 'upload/' . $image_file); // move upload file temperory directory to your upload folder
+              } else {
+                $errorMsg = "Your file too large please upload 5MB size"; // error message file size larger than 5mb
+              }
             } else {
-              $errorMsg = "Your file too large please upload 5MB size"; // error message file size larger than 5mb
+              $errorMsg = "File already exists... Check upload folder"; // error message file not exists your upload folder path
             }
           } else {
-            $errorMsg = "File already exists... Check upload filder"; // error message file not exists your upload folder path
+            $errorMsg = "Upload JPG, JPEG, PNG & GIF file formate...";
           }
-        } else {
-          $errorMsg = "Upload JPG, JPEG, PNG & GIF file formate...";
         }
-      }
 
-      if (!isset($errorMsg)) {
-        $update_data = $db->prepare("UPDATE books SET name = :name , price = :price , qty= :qty , updatedBy = :updatedBy , author = :author , category = :category , image = :image WHERE id = :id");
-        $update_data->bindParam(":id", $id);
-        $update_data->bindParam(":name", $name);
-        $update_data->bindParam(":price", $price);
-        $update_data->bindParam(":qty", $qty);
-        $update_data->bindParam(":author", $author);
-        $update_data->bindParam(":updatedBy", $updatedBy);
-        $update_data->bindParam(":category", $category);
-        $update_data->bindParam(":image", $image_file);
+        if (!isset($errorMsg)) {
+          $update_data = $db->prepare("UPDATE books SET name = :name , price = :price , qty= :qty , updatedBy = :updatedBy , author = :author , category = :category , image = :image WHERE id = :id");
+          $update_data->bindParam(":id", $id);
+          $update_data->bindParam(":name", $name);
+          $update_data->bindParam(":price", $price);
+          $update_data->bindParam(":qty", $qty);
+          $update_data->bindParam(":author", $author);
+          $update_data->bindParam(":updatedBy", $updatedBy);
+          $update_data->bindParam(":category", $category);
+          $update_data->bindParam(":image", $image_file);
 
-        if ($update_data->execute()) {
-          $insertMsg = "Update Successfully...";
-          // header("refresh:2;book_list.php");
-          header("location: book_list.php");
+          if ($update_data->execute()) {
+            $insertMsg = "Update Successfully...";
+            // header("refresh:2;book_list.php");
+            header("location: book_list.php");
+          }
         }
+      } catch (PDOException $e) {
+        echo $e->getMessage();
       }
-    } catch (Exception $e) {
-      echo $e->getMessage();
+    } else {
+      try {
+        if (!isset($errorMsg)) {
+          $update_data = $db->prepare("UPDATE books SET name = :name , price = :price , qty= :qty , updatedBy = :updatedBy , author = :author , category = :category  WHERE id = :id");
+          $update_data->bindParam(":id", $id);
+          $update_data->bindParam(":name", $name);
+          $update_data->bindParam(":price", $price);
+          $update_data->bindParam(":qty", $qty);
+          $update_data->bindParam(":author", $author);
+          $update_data->bindParam(":updatedBy", $updatedBy);
+          $update_data->bindParam(":category", $category);
+
+          if ($update_data->execute()) {
+            $insertMsg = "Update Successfully...";
+            // header("refresh:2;book_list.php");
+            header("location: book_list.php");
+          }
+        }
+      } catch (PDOException $e) {
+        echo $e->getMessage();
+      }
     }
   }
 }
@@ -108,6 +130,10 @@ if (isset($_REQUEST['btn_update'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book Edit</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <script src="js/show_image.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -129,9 +155,13 @@ if (isset($_REQUEST['btn_update'])) {
             </li>
 
             <li class="nav-item">
-              <p class="nav-link btn btn-outline-white my-2">
+              <a class="nav-link my-2 text-center" aria-current="page" href="admin/admin_home.php">Dashboard</a>
+            </li>
+
+            <li class="nav-item">
+              <p class="nav-link btn btn-outline-white my-2 pe-none">
                 <?php
-                echo $_SESSION['email']
+                echo $_SESSION['admin_login']
                 ?>
               </p>
             </li>
@@ -190,14 +220,14 @@ if (isset($_REQUEST['btn_update'])) {
 
               <div class="mb-3">
                 <label for="image" class="form-label">Image</label>
-                <input type="file" name="image" class="form-control" id="id_image">
+                <input type="file" name="image" class="form-control" id="id_image" value=<?php echo 'upload/' . $book['image'] ?> onchange="showImage()">
               </div>
 
               <div class="mb-3 text-center text-lg-start">
                 <img src=<?php echo 'upload/' . $book['image'] ?> id="blah" alt="" class="img-fluid">
               </div>
 
-              <input type="text" class="form-control d-none" name="updatedBy" value=<?php echo $_SESSION['id'] ?>>
+              <input type="text" class="form-control d-none" name="updatedBy" value=<?php echo $_SESSION['uid'] ?>>
 
               <?php
               if (isset($errorMsg)) { ?>
@@ -224,8 +254,7 @@ if (isset($_REQUEST['btn_update'])) {
   </div>
 
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+
 </body>
 
 </html>

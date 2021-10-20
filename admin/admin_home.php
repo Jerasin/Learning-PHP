@@ -3,24 +3,61 @@ require_once '../connection.php';
 // ใช้สำหรับเริ่มต้นใช้งาน session
 session_start();
 
+// Config Pagination
+$limit = 10;
+
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION['admin_login'])) {
     header('location: ../index.php');
 }
 
-if (isset($_REQUEST['id'])) {
+if (empty(isset($_POST['page']))) {
+    $page = 1;
+    $start_index = ($page - 1) * $limit;
+} else if (isset($_POST['page'])) {
+    $page = $_POST['page'];
+    $start_index = ($page - 1) * $limit;
+}
+
+if (isset($_GET['category'])) {
+    // $actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    // echo $actual_link;
     try {
-        $id = $_REQUEST['id'];
-        $select_books = $db->prepare("SELECT * FROM books WHERE category = :id");
+        $id = $_GET['category'];
+        $select_books = $db->prepare("SELECT b.id , b.name , a.name as author , b.price , b.qty , c.name as category ,b.image FROM `books` as b LEFT JOIN categories as c ON b.category = c.id LEFT JOIN authors as a ON b.author = a.id WHERE c.id = :id and b.qty >= 1 LIMIT :start_index,:limit");
         $select_books->bindParam(':id', $id);
+        $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
+        $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
         $select_books->execute();
+
+        // Pagination
+        $count_books = $db->prepare("SELECT count(b.id) from `books` as b LEFT JOIN categories as c ON b.category = c.id WHERE c.id = :id and b.qty >= 1");
+        $count_books->bindParam(':id', $id);
+        $count_books->execute();
+        $count = $count_books->fetch(PDO::FETCH_ASSOC);
+        foreach ($count as $key => $value) {
+            $total_page =  round($value / $limit);
+        }
     } catch (PDOException $e) {
         $e->getMessage();
     }
-} else if (empty($_REQUEST['id'])) {
+} else if (empty($_GET['category'])) {
+    // $actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
     try {
-        $select_books = $db->prepare("SELECT * FROM books");
+        $id = 0;
+        // LIMIT 0, 4  =  "return only 4 records, start on record 0 "
+        $select_books = $db->prepare("SELECT b.id , b.name , a.name as author , b.price , b.qty , c.name as category , b.image FROM `books` as b LEFT JOIN categories as c ON b.category = c.id LEFT JOIN authors as a ON b.author = a.id WHERE b.qty >= 1  LIMIT :start_index,:limit");
+        $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
+        $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
         $select_books->execute();
+
+        // Pagination
+        $count_books = $db->prepare("SELECT count(id) from `books`");
+        $count_books->execute();
+        $count = $count_books->fetch(PDO::FETCH_ASSOC);
+        foreach ($count as $key => $value) {
+            $total_page =  round($value / $limit);
+        }
     } catch (PDOException $e) {
         $e->getMessage();
     }
@@ -38,6 +75,9 @@ if (isset($_REQUEST['id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Page</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -59,11 +99,21 @@ if (isset($_REQUEST['id'])) {
                         </li>
 
                         <li class="nav-item">
-                            <p class="nav-link btn btn-outline-white my-2">
-                                <?php
-                                echo $_SESSION['email']
-                                ?>
-                            </p>
+                            <a class="nav-link my-2 text-center" aria-current="page" href="../dashborad.php">Dashboard</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link my-2 text-center <?php
+                                                                if (empty($_SESSION['pid'])) {
+                                                                    echo 'd-none';
+                                                                }
+                                                                ?>" aria-current="page" href="../cart_list.php">Cart</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link my-2 text-center pe-none" aria-current="page" href="admin/admin_home.php"><?php
+                                                                                                                            echo $_SESSION['admin_login']
+                                                                                                                            ?></a>
                         </li>
 
                         <li class="nav-item">
@@ -94,7 +144,7 @@ if (isset($_REQUEST['id'])) {
                     <ul class="list-group">
                         <li class="list-group-item text-center"><b>Categories</b></li>
                         <li class="list-group-item <?php
-                                                    if (empty($_REQUEST['id'])) {
+                                                    if (empty($_GET['category'])) {
                                                         echo "active";
                                                     }
                                                     ?>  text-center">
@@ -111,7 +161,7 @@ if (isset($_REQUEST['id'])) {
                             <li class="list-group-item <?php if ($id == $row['id']) {
                                                             echo "active";
                                                         }  ?> text-center nav-item">
-                                <a class="nav-link  p-0 text-dark" href="admin_home.php?id=<?php echo $row['id']; ?>">
+                                <a class="nav-link  p-0 text-dark" href="admin_home.php?category=<?php echo $row['id']; ?>">
                                     <?php
                                     echo $row['name'];
                                     ?>
@@ -123,37 +173,75 @@ if (isset($_REQUEST['id'])) {
                 </div>
             </div>
 
-            <div class="col-auto col-lg-10">
+            <div class="col-12 col-lg-10">
                 <div class="row mt-3 mt-lg-0">
                     <?php
                     while ($books = $select_books->fetch(PDO::FETCH_ASSOC)) { ?>
 
                         <div class="col-12 col-lg-3 mb-3">
+
                             <div class="card" style="width: 100%;">
-                                <!-- <img src="..." class="card-img-top" alt="..."> -->
+                                <div class="card-header">
+                                    <?php if ($books['image']) { ?>
+                                        <img src=<?php echo '../upload/' . $books['image'] ?> class="card-img-top p-0" alt="...">
+                                    <?php } ?>
+
+                                    <?php if (!$books['image']) { ?>
+                                        <img src='../media/noimage.jpg' class="card-img-top p-0" alt="...">
+                                    <?php } ?>
+                                </div>
+
                                 <div class="card-body">
-                                    <h5 class="card-title"><?php echo $books['name'] ?></h5>
+                                    <h5 class="card-title wlc"><?php echo $books['name'] ?></h5>
                                     <p class="card-text m-0">Author: <?php echo $books['author'] ?> </p>
                                     <p class="card-text m-0">Price: <?php echo $books['price'] ?> </p>
                                     <p class="card-text m-0">Qty: <?php echo $books['qty'] ?> </p>
-                                    <a href="#" class="btn btn-primary mt-2">Go somewhere</a>
+                                    <span>Category:</span>
+                                    <span class="badge bg-secondary"><?php echo $books['category']  ?></span>
+                                    <a href="../detail_book.php?id=<?php echo $books['id'] ?>" class="btn btn-warning w-100 mt-2">Detail</a>
                                 </div>
                             </div>
+
                         </div>
 
                     <?php   } ?>
                 </div>
+
+                <form action="" method='post'>
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination">
+                            <!-- <li class="page-item">
+                                <a class="page-link" href="#">                               
+                                    Previous
+                                </a>
+                            </li> -->
+
+                            <?php for ($index = 1; $index <= $total_page; $index++) {  ?>
+                                <li class="page-item <?php if ($page == $index) {
+                                                            echo 'active';
+                                                        } ?>">
+                                    <input type="submit" class="page-link " name="page" value=<?php echo $index ?>>
+                                </li>
+                            <?php } ?>
+
+                            <!-- <li class="page-item">
+                                <a class="page-link" href="#">
+                                    Next
+                                </a>
+                            </li> -->
+                        </ul>
+                    </nav>
+
+                </form>
+
             </div>
         </div>
-
-
     </div>
 
 
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+
 </body>
 
 </html>

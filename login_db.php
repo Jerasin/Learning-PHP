@@ -47,25 +47,27 @@ if (empty($username)) {
                 }
 
                 if ($username == $dbusername and $email == $dbemail and $hash  and $role == $dbrole) {
-
+                    $cart_list = array();
                     switch ($dbrole) {
                         case '1':
-                            $_SESSION['id'] = $id;
-                            $_SESSION['email'] = $email;
+                            $_SESSION['admin_login'] = $email;
+                            $_SESSION['uid'] = $id;
                             $_SESSION['success'] = "Admin Login Successfully...";
                             header("location: admin/admin_home.php");
                             break;
 
-                        case '3':
-                            $_SESSION['employee_login'] = $email;
-                            $_SESSION['success'] = "Employee Login Successfully...";
-                            header("location: employee/employee_home.php");
-                            break;
-
                         case '2':
                             $_SESSION['user_login'] = $email;
+                            $_SESSION['uid'] = $id;
                             $_SESSION['success'] = "User Login Successfully...";
                             header("location: user/user_home.php");
+                            break;
+
+                        case '3':
+                            $_SESSION['employee_login'] = $email;
+                            $_SESSION['uid'] = $id;
+                            $_SESSION['success'] = "Employee Login Successfully...";
+                            header("location: employee/employee_home.php");
                             break;
 
                         default:

@@ -2,7 +2,7 @@
 require_once 'connection.php';
 session_start();
 
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION['admin_login'])) {
   header('location: ../index.php');
 }
 
@@ -20,12 +20,6 @@ if (isset($_POST['btn_insert'])) {
   $category = $_REQUEST['category'];
   $createdBy = $_REQUEST['createdBy'];
 
-  $image_file = $_FILES['image']['name'];
-  $type = $_FILES['image']['type'];
-  $size = $_FILES['image']['size'];
-  $temp = $_FILES['image']['tmp_name'];
-  $path = "upload/" . $image_file; // set upload folder path
-
   if (empty($name)) {
     $errorMsg = "Please enter Name";
   } else  if (empty($price)) {
@@ -39,42 +33,69 @@ if (isset($_POST['btn_insert'])) {
   } else  if (empty($createdBy)) {
     $errorMsg = "Please enter CreateBy";
   } else {
-    try {
+    if ($_FILES['image']['name']) {
+      $image_file = $_FILES['image']['name'];
+      $type = $_FILES['image']['type'];
+      $size = $_FILES['image']['size'];
+      $temp = $_FILES['image']['tmp_name'];
+      $path = "upload/" . $image_file; // set upload folder path
 
-      if (isset($image_file)) {
-        if ($type == "image/jpg" || $type == 'image/jpeg' || $type == "image/png" || $type == "image/gif") {
-          if (!file_exists($path)) { // check file not exist in your upload folder path
-            if ($size < 5000000) { // check file size 5MB
-              move_uploaded_file($temp, 'upload/' . $image_file); // move upload file temperory directory to your upload folder
+      try {
+        if (isset($image_file)) {
+          if ($type == "image/jpg" || $type == 'image/jpeg' || $type == "image/png" || $type == "image/gif") {
+            if (!file_exists($path)) { // check file not exist in your upload folder path
+              if ($size < 5000000) { // check file size 5MB
+                move_uploaded_file($temp, 'upload/' . $image_file); // move upload file temperory directory to your upload folder
+              } else {
+                $errorMsg = "Your file too large please upload 5MB size"; // error message file size larger than 5mb
+              }
             } else {
-              $errorMsg = "Your file too large please upload 5MB size"; // error message file size larger than 5mb
+              $errorMsg = "File already exists... Check upload filder"; // error message file not exists your upload folder path
             }
           } else {
-            $errorMsg = "File already exists... Check upload filder"; // error message file not exists your upload folder path
+            $errorMsg = "Upload JPG, JPEG, PNG & GIF file formate...";
           }
-        } else {
-          $errorMsg = "Upload JPG, JPEG, PNG & GIF file formate...";
         }
-      }
 
-      if (!isset($errorMsg)) {
-        $insert_data = $db->prepare("INSERT INTO books(name,price,qty,author,createdBy,category ,	image) VALUES (:name,:price,:qty,:author,:createdBy,:category ,:image)");
-        $insert_data->bindParam(":name", $name);
-        $insert_data->bindParam(":price", $price);
-        $insert_data->bindParam(":qty", $qty);
-        $insert_data->bindParam(":author", $author);
-        $insert_data->bindParam(":createdBy", $createdBy);
-        $insert_data->bindParam(":category", $category);
-        $insert_data->bindParam(":image", $image_file);
+        if (!isset($errorMsg)) {
+          $insert_data = $db->prepare("INSERT INTO books(name,price,qty,author,createdBy,category ,	image) VALUES (:name,:price,:qty,:author,:createdBy,:category ,:image)");
+          $insert_data->bindParam(":name", $name);
+          $insert_data->bindParam(":price", $price);
+          $insert_data->bindParam(":qty", $qty);
+          $insert_data->bindParam(":author", $author);
+          $insert_data->bindParam(":createdBy", $createdBy);
+          $insert_data->bindParam(":category", $category);
+          $insert_data->bindParam(":image", $image_file);
 
-        if ($insert_data->execute()) {
-          $insertMsg = "Insert Successfully...";
-          // header("refresh:2;book_list.php");
-          header("location: book_list.php");
+          if ($insert_data->execute()) {
+            $insertMsg = "Insert Successfully...";
+            // header("refresh:2;book_list.php");
+            header("location: book_list.php");
+          }
         }
+      } catch (PDOException $e) {
+        $errorMsg = $e->getMessage();
       }
-    } catch (Exception $e) {
-      $errorMsg = $e->getMessage();
+    } else {
+      try {
+        if (!isset($errorMsg)) {
+          $insert_data = $db->prepare("INSERT INTO books(name,price,qty,author,createdBy,category) VALUES (:name,:price,:qty,:author,:createdBy,:category )");
+          $insert_data->bindParam(":name", $name);
+          $insert_data->bindParam(":price", $price);
+          $insert_data->bindParam(":qty", $qty);
+          $insert_data->bindParam(":author", $author);
+          $insert_data->bindParam(":createdBy", $createdBy);
+          $insert_data->bindParam(":category", $category);
+
+          if ($insert_data->execute()) {
+            $insertMsg = "Insert Successfully...";
+            // header("refresh:2;book_list.php");
+            header("location: book_list.php");
+          }
+        }
+      } catch (PDOException $e) {
+        $errorMsg = $e->getMessage();
+      }
     }
   }
 }
@@ -89,6 +110,10 @@ if (isset($_POST['btn_insert'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book Add</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <script src="js/show_image.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -110,9 +135,13 @@ if (isset($_POST['btn_insert'])) {
             </li>
 
             <li class="nav-item">
-              <p class="nav-link btn btn-outline-white my-2">
+              <a class="nav-link my-2 text-center" aria-current="page" href="admin/admin_home.php">Dashboard</a>
+            </li>
+
+            <li class="nav-item">
+              <p class="nav-link btn btn-outline-white my-2 pe-none">
                 <?php
-                echo $_SESSION['email']
+                echo $_SESSION['admin_login']
                 ?>
               </p>
             </li>
@@ -167,14 +196,14 @@ if (isset($_POST['btn_insert'])) {
 
             <div class="mb-3">
               <label for="image" class="form-label">Image</label>
-              <input type="file" name="image" class="form-control" id="id_image">
+              <input type="file" name="image" class="form-control" id="id_image" onchange="showImage()">
             </div>
 
             <div class="mb-3 text-center text-lg-start">
               <img src="#" id="blah" alt="" class="img-fluid">
             </div>
 
-            <input type="text" class="form-control d-none" name="createdBy" value=<?php echo $_SESSION['id'] ?>>
+            <input type="text" class="form-control d-none" name="createdBy" value=<?php echo $_SESSION['uid'] ?>>
 
             <?php
             if (isset($errorMsg)) { ?>
@@ -199,9 +228,7 @@ if (isset($_POST['btn_insert'])) {
 
   </div>
 
-  <script src="show_image.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+
 </body>
 
 </html>

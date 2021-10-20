@@ -1,0 +1,22 @@
+.small-box {
+  border-radius: 0.25rem;
+  box-shadow: 0 0 1px rgb(0 0 0 / 13%), 0 1px 3px rgb(0 0 0 / 20%);
+  display: block;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 100%;
+}
+
+.small-box > .inner {
+  padding: 10px;
+}
+
+.icon {
+  position: absolute;
+  right: 15px;
+  top: 10%;
+}
+
+.users_icon {
+  cursor: pointer;
+}

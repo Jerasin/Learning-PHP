@@ -4,7 +4,7 @@ require_once 'connection.php';
 session_start();
 
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
-if (!isset($_SESSION['id'])) {
+if (!isset($_SESSION['admin_login'])) {
   header('location: ../index.php');
 }
 
@@ -41,7 +41,8 @@ if (isset($_REQUEST['delete_id'])) {
     $delete_id->bindParam(":id", $id);
     if ($delete_id->execute()) {
       $_SESSION['success'] = "Delete Book Successfully...";
-      header("refresh:2;book_list.php");
+      // header("refresh:2;book_list.php");
+      header('location: book_list.php');
     };
   } catch (PDOException $e) {
     echo "Error: " . $e->getMessage;
@@ -78,9 +79,13 @@ if (isset($_REQUEST['delete_id'])) {
             </li>
 
             <li class="nav-item">
+              <a class="nav-link my-2 text-center" aria-current="page" href="admin/admin_home.php">Dashboard</a>
+            </li>
+
+            <li class="nav-item">
               <p class="nav-link pe-none btn btn-outline-white my-2">
                 <?php
-                echo $_SESSION['email']
+                echo $_SESSION['admin_login']
                 ?>
               </p>
             </li>

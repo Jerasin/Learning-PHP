@@ -10,11 +10,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 </head>
 
-<body>
+<body class="bg-light">
     <div class="container">
-        <div class="row">
-            <div class="col-md-4 offset-md-4">
-                <form class="mt-5" action="login_db.php" method="post">
+        <div class="row d-flex  align-items-center vh-100">
+            <div class="col-md-8 " text-center">
+                <img class="img-fluid" src="media/logo_login.jpg" alt="">
+            </div>
+            <div class="col-md-4 ">
+                <form class="mt-2" action="login_db.php" method="post">
                     <div class="mb-3">
                         <label class="form-label">Username</label>
                         <input type="text" class="form-control" name="username">
@@ -39,9 +42,9 @@
                                 $select_data = $db->prepare("SELECT id , name FROM master_role ORDER BY id ASC");
                                 $select_data->execute();
                                 $rows = $select_data->fetchAll();
-                                foreach ($rows as $row) {
-                                    echo '<option  value="' . $row['id'] . '">' . $row['name'] . '</option>';
-                                }
+                                foreach ($rows as $row) { ?>
+                                    <option value=<?php echo $row['id'] ?>> <?php echo $row['name'] ?></option>;
+                            <?php  }
                             } catch (PDOException $e) {
                                 echo "Error: " . $e->getMessage();
                             }

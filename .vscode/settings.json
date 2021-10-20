@@ -3,7 +3,7 @@
     "editor.tabSize": 2,
     "editor.fontSize": 22,
     "editor.formatOnSave": true,
-    "workbench.iconTheme": "vscode-icons",
+    "workbench.iconTheme": "material-icon-theme",
     "[html]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },

@@ -2,6 +2,15 @@
 require_once  'connection.php';
 session_start();
 
+// เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
+if (!isset($_SESSION['admin_login'])) {
+  header('location: index.php');
+} else if (!isset($_SESSION['user_login'])) {
+  header('location: index.php');
+} else if (!isset($_SESSION['employee'])) {
+  header('location: index.php');
+}
+
 if (isset($_REQUEST['id'])) {
   try {
     $id = $_REQUEST['id'];

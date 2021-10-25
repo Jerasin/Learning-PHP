@@ -6,12 +6,14 @@ session_start();
 // Config Pagination
 $limit = 10;
 
+// echo '<pre>' . print_r($_SESSION, TRUE) . '</pre>';
+
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
 if (!isset($_SESSION['admin_login'])) {
     header('location: ../index.php');
 }
 
-if (empty(isset($_POST['page']))) {
+if (empty($_POST['page'])) {
     $page = 1;
     $start_index = ($page - 1) * $limit;
 } else if (isset($_POST['page'])) {
@@ -36,13 +38,12 @@ if (isset($_GET['category'])) {
         $count_books->execute();
         $count = $count_books->fetch(PDO::FETCH_ASSOC);
         foreach ($count as $key => $value) {
-            $total_page =  round($value / $limit);
+            $total_page =  ceil($value / $limit);
         }
     } catch (PDOException $e) {
         $e->getMessage();
     }
 } else if (empty($_GET['category'])) {
-    // $actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
     try {
         $id = 0;
         // LIMIT 0, 4  =  "return only 4 records, start on record 0 "
@@ -56,7 +57,7 @@ if (isset($_GET['category'])) {
         $count_books->execute();
         $count = $count_books->fetch(PDO::FETCH_ASSOC);
         foreach ($count as $key => $value) {
-            $total_page =  round($value / $limit);
+            $total_page =  ceil($value / $limit);
         }
     } catch (PDOException $e) {
         $e->getMessage();
@@ -99,7 +100,7 @@ if (isset($_GET['category'])) {
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link my-2 text-center" aria-current="page" href="../dashborad.php">Dashboard</a>
+                            <a class="nav-link my-2 text-center" aria-current="page" href="../dashboard.php">Dashboard</a>
                         </li>
 
                         <li class="nav-item">
@@ -139,7 +140,7 @@ if (isset($_GET['category'])) {
             <div class="col-md-2">
                 <a href="../book_list.php" class="btn btn-success w-100 mb-2">Book List</a>
 
-                <a href="#" class="btn btn-warning w-100 mb-2">Add Category</a>
+                <a href="../category_list.php" class="btn btn-warning w-100 mb-2">Category List</a>
                 <div class="border border-2 border-light">
                     <ul class="list-group">
                         <li class="list-group-item text-center"><b>Categories</b></li>
@@ -210,12 +211,6 @@ if (isset($_GET['category'])) {
                 <form action="" method='post'>
                     <nav aria-label="Page navigation example">
                         <ul class="pagination">
-                            <!-- <li class="page-item">
-                                <a class="page-link" href="#">                               
-                                    Previous
-                                </a>
-                            </li> -->
-
                             <?php for ($index = 1; $index <= $total_page; $index++) {  ?>
                                 <li class="page-item <?php if ($page == $index) {
                                                             echo 'active';
@@ -223,12 +218,6 @@ if (isset($_GET['category'])) {
                                     <input type="submit" class="page-link " name="page" value=<?php echo $index ?>>
                                 </li>
                             <?php } ?>
-
-                            <!-- <li class="page-item">
-                                <a class="page-link" href="#">
-                                    Next
-                                </a>
-                            </li> -->
                         </ul>
                     </nav>
 

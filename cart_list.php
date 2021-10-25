@@ -172,7 +172,7 @@ if (isset($_REQUEST['delete_id'])) {
           <li class="nav-item">
             <a class="nav-link my-2 text-center <?php if (empty($_SESSION['admin_login'])) {
                                                   echo 'd-none';
-                                                } ?>" aria-current="page" href="admin/admin_home.php">Dashboard</a>
+                                                } ?>" aria-current="page" href="dashboard.php">Dashboard</a>
           </li>
 
           <li class="nav-item">
@@ -231,7 +231,7 @@ if (isset($_REQUEST['delete_id'])) {
                     <td><?php echo $_SESSION['pname'][$k] ?></td>
 
                     <td class="text-center">
-                      <input class="form-control" min="1" max=<?php echo $_SESSION['pqty'][$k] ?> style="width: 60px" onchange='update_Btn()' type="number" name="change_qty=<?php echo $_SESSION['pid'][$k] ?>" value=<?php echo $_SESSION['sum_qty'][$k]  ?> />
+                      <input class="form-control m-auto" min="1" max=<?php echo $_SESSION['pqty'][$k] ?> style="width: 60px" onchange='update_Btn()' type="number" name="change_qty=<?php echo $_SESSION['pid'][$k] ?>" value=<?php echo $_SESSION['sum_qty'][$k]  ?> />
                     </td>
 
                     <td class="text-center"><?php echo $_SESSION['pprice'][$k] ?></td>

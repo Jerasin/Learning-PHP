@@ -4,17 +4,28 @@ require_once 'connection.php';
 session_start();
 
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
-if (!isset($_SESSION['admin_login']) and !isset($_SESSION['user_login']) and !isset($_SESSION['employee_login'])) {
+if (!isset($_SESSION['admin_login'])) {
   header('location: index.php');
-  // echo '<pre>' . print_r($_SESSION, TRUE) . '</pre>';
 }
 
-if (isset($_REQUEST['id'])) {
+// Config Pagination
+$limit = 5;
+
+if (isset($_GET['id'])) {
   try {
-    $id = $_REQUEST['id'];
-    $select_books = $db->prepare("SELECT b.id , b.name , a.name as author , b.price , b.qty , c.name as category , image FROM `books` as b LEFT JOIN categories as c ON b.category = c.id LEFT JOIN authors as a ON b.author = a.id WHERE b.id = :id ");
-    $select_books->bindParam(':id', $id);
-    $select_books->execute();
+    $id = $_GET['id'];
+    $select_saleorder = $db->prepare("SELECT so.saleorder_id , so.name , so.price , so.qty , c.name as category , a.name as author FROM saleorders as so LEFT JOIN categories as c ON so.category = c.id LEFT JOIN authors as a ON so.author = a.id WHERE so.saleorder_id =  :id ");
+    $select_saleorder->bindParam(':id', $id);
+    $select_saleorder->execute();
+
+    // Pagination
+    $count_saleorder_list = $db->prepare("SELECT count(id) from `saleorders` WHERE saleorder_id =  :id ");
+    $count_saleorder_list->bindParam(':id', $id);
+    $count_saleorder_list->execute();
+    $count = $count_saleorder_list->fetch(PDO::FETCH_ASSOC);
+    foreach ($count as $key => $value) {
+      $total_page =  ceil($value / $limit);
+    }
   } catch (PDOException $e) {
     $e->getMessage();
   }
@@ -89,32 +100,58 @@ if (isset($_REQUEST['id'])) {
     </nav>
 
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-12">
+      <h3 class="ms-3 mt-3">Saleorder Id: <?php echo $id ?></h3>
+      <div class="row m-0 mt-3">
+        <div class="col-auto col-lg-8 offset-2">
+          <div class="container p-0 px-lg-5 w-100">
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered">
+                <thead>
+                  <tr>
+                    <th scope="col" class="text-center">Name</th>
+                    <th scope="col" class="text-center">Price</th>
+                    <th scope="col" class="text-center">Qty</th>
+                    <th scope="col" class="text-center">Category</th>
+                    <th scope="col" class="text-center w-25">Author</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  while ($saleorder = $select_saleorder->fetch(PDO::FETCH_ASSOC)) { ?>
+                    <tr>
+                      <td class="text-center"><?php echo $saleorder['name'] ?></td>
+                      <td class="text-center"><?php echo $saleorder['price'] ?></td>
+                      <td class="text-center"><?php echo $saleorder['qty'] ?></td>
+                      <td class="text-center"><?php echo $saleorder['category'] ?></td>
+                      <td class="text-center"><?php echo $saleorder['author'] ?></td>
 
-          <?php
-          while ($books = $select_books->fetch(PDO::FETCH_ASSOC)) { ?>
-            <div class="row p-0">
-              <div class="col-12 col-md-3 m-0 px-3">
-                <img src=<?php echo 'upload/' . $books['image'] ?> class="card-img-top p-0" alt="...">
-              </div>
-              <div class="col-12 col-md-9">
-                <h5 class="card-title wlc"><?php echo $books['name'] ?></h5>
-                <p class="card-text m-0">Author: <?php echo $books['author'] ?> </p>
-                <p class="card-text m-0">Price: <?php echo $books['price'] ?> </p>
-                <p class="card-text m-0">Qty: <?php echo $books['qty'] ?> </p>
-                <span>Category:</span>
-                <span class="badge bg-secondary"><?php echo $books['category']  ?></span>
-                <div class="mt-3">
-                  <a href="#" class="btn btn-success">Add Comment</a>
-                  <a href="cart_add.php?id=<?php echo $books['id'] ?>" class="btn btn-warning">Add Cart</a>
-                </div>
-              </div>
-
+                    </tr>
+                  <?php   } ?>
+                </tbody>
+              </table>
             </div>
 
-          <?php } ?>
+
+            <form action="" method='post'>
+              <nav aria-label="Page navigation example">
+                <ul class="pagination">
+                  <?php for ($index = 1; $index <= $total_page; $index++) {  ?>
+                    <li class="page-item <?php if ($page == $index) {
+                                            echo 'active';
+                                          } ?>">
+                      <input type="submit" class="page-link " name="page" value=<?php echo $index ?>>
+                    </li>
+                  <?php } ?>
+                </ul>
+              </nav>
+
+            </form>
+
+          </div>
         </div>
+
+
+
       </div>
 
 
@@ -122,11 +159,6 @@ if (isset($_REQUEST['id'])) {
 
 
   </div>
-
-
-
-
-
 </body>
 
 </html>

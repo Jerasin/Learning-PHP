@@ -39,8 +39,12 @@ if (empty($username)) {
             $insert_data->bindParam(":uemail", $email);
             $insert_data->bindParam(":upassword", $hash_password);
             $insert_data->bindParam(":urole", $role);
+            $insert_data->execute();
 
-            if ($insert_data->execute()) {
+            $insert_author = $db->prepare("INSERT INTO authors(name) VALUES (:uname )");
+            $insert_author->bindParam(":uname", $username);
+
+            if ($insert_author->execute()) {
                 $_SESSION['success'] = "Register Successfully...";
                 header("location: index.php");
             } else {

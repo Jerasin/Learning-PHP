@@ -155,7 +155,7 @@ if (isset($_REQUEST['btn_update'])) {
             </li>
 
             <li class="nav-item">
-              <a class="nav-link my-2 text-center" aria-current="page" href="admin/admin_home.php">Dashboard</a>
+              <a class="nav-link my-2 text-center" aria-current="page" href="dashboard.php">Dashboard</a>
             </li>
 
             <li class="nav-item">

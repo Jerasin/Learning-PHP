@@ -3,13 +3,13 @@ require_once 'connection.php';
 // ใช้สำหรับเริ่มต้นใช้งาน session
 session_start();
 
-// Config Pagination
-$limit = 5;
-
 // เช็คว่าไม่มี session = Admin Login ให้ Rediect กลับไปหน้า login
 if (!isset($_SESSION['admin_login'])) {
   header('location: ../index.php');
 }
+
+// Config Pagination
+$limit = 5;
 
 if (empty($_POST['page'])) {
   $page = 1;
@@ -19,68 +19,35 @@ if (empty($_POST['page'])) {
   $start_index = ($page - 1) * $limit;
 }
 
-if (isset($_REQUEST['id'])) {
-  try {
-    $id = $_REQUEST['id'];
-    $select_books = $db->prepare("SELECT b.id , b.name , b.qty , b.price , c.name as category FROM books as b LEFT JOIN categories as c ON b.category = c.id WHERE c.id = :id LIMIT :start_index,:limit");
-    $select_books->bindParam(':id', $id);
-    $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
-    $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
-    $select_books->execute();
 
-    // Pagination
-    $count_books = $db->prepare("SELECT count(b.id) from `books` as b LEFT JOIN categories as c ON b.category = c.id WHERE c.id = :id ");
-    $count_books->bindParam(':id', $id);
-    $count_books->execute();
-    $count = $count_books->fetch(PDO::FETCH_ASSOC);
-    foreach ($count as $key => $value) {
-      $total_page =  ceil($value / $limit);
-    }
-  } catch (PDOException $e) {
-    echo "Error: " . $e->getMessage();
-  }
-} else if (empty($_REQUEST['id'])) {
-  try {
-    $select_books = $db->prepare("SELECT b.id , b.name , b.qty , b.price , c.name as category FROM books as b LEFT JOIN categories as c ON b.category = c.id LIMIT :start_index,:limit");
-    $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
-    $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
-    $select_books->execute();
+try {
+  $select_category_list = $db->prepare('SELECT c.id , c.name as category , u.username , c.createdAt FROM categories as c LEFT JOIN user_info as u ON c.createdBy = u.id ');
+  $select_category_list->execute();
 
-    // Pagination
-    $count_books = $db->prepare("SELECT count(b.id) from `books` as b LEFT JOIN categories as c ON b.category = c.id ");
-    $count_books->execute();
-    $count = $count_books->fetch(PDO::FETCH_ASSOC);
-    foreach ($count as $key => $value) {
-      $total_page =  ceil($value / $limit);
-    }
-  } catch (PDOException $e) {
-    echo "Error: " . $e->getMessage();
+  // Pagination
+  $count_categories = $db->prepare("SELECT count(id) from `categories` ");
+  $count_categories->execute();
+  $count = $count_categories->fetch(PDO::FETCH_ASSOC);
+  foreach ($count as $key => $value) {
+    $total_page =  ceil($value / $limit);
   }
+} catch (PDOException $e) {
+  echo "Error: " . $e->getMessage();
 }
 
 if (isset($_REQUEST['delete_id'])) {
   try {
     $id = $_REQUEST['delete_id'];
 
-    $path_image = $db->prepare("SELECT image FROM books WHERE id = :id");
-    $path_image->bindParam(":id", $id);
-    $path_image->execute();
-    $image_path = $path_image->fetch(PDO::FETCH_ASSOC);
-
-    if (isset($image_path['image'])) {
-      $path = "upload/" .  $image_path['image']; // set delete folder path
-      unlink($path);
-    }
-
-    $delete_id = $db->prepare("DELETE FROM books WHERE id = :id");
+    $delete_id = $db->prepare("DELETE FROM categories WHERE id = :id");
     $delete_id->bindParam(":id", $id);
     if ($delete_id->execute()) {
-      $_SESSION['success'] = "Delete Book Successfully...";
-      header("refresh:2;book_list.php");
-      // header('location: book_list.php');
+      $_SESSION['success'] = "Delete Category Successfully...";
+      // use refresh:2 from unset session in same page
+      header('refresh:2;category_list.php');
     };
   } catch (PDOException $e) {
-    echo "Error: " . $e->getMessage();
+    echo "Error: " . $e->getMessage;
   }
 }
 ?>
@@ -157,39 +124,11 @@ if (isset($_REQUEST['delete_id'])) {
 
     <div class="row m-0 mt-3">
       <div class="col-md-2">
-        <a href="add_book.php" class="btn btn-success w-100 mb-2">Add Book</a>
+        <a href="book_list.php" class="btn btn-success w-100 mb-2">Book List</a>
 
-        <a href="category_list.php" class="btn btn-warning w-100 mb-2">Category List</a>
+        <a href="add_category.php" class="btn btn-warning w-100 mb-2">Add Category</a>
         <div class="border border-2 border-light">
-          <ul class="list-group">
-            <li class="list-group-item text-center"><b>Categories</b></li>
-            <li class="list-group-item <?php
-                                        if (empty($_REQUEST['id'])) {
-                                          echo "active";
-                                        }
-                                        ?>  text-center">
-              <a class="nav-link  p-0 text-dark" aria-current="page" href="book_list.php">
-                All
-              </a>
-            </li>
 
-            <?php
-            $select_categories = $db->prepare("SELECT id ,name FROM categories");
-            $select_categories->execute();
-
-            while ($row = $select_categories->fetch(PDO::FETCH_ASSOC)) { ?>
-              <li class="list-group-item <?php if ($id == $row['id']) {
-                                            echo "active";
-                                          }  ?> text-center nav-item">
-                <a class="nav-link  p-0 text-dark" href="book_list.php?id=<?php echo $row['id']; ?>">
-                  <?php
-                  echo $row['name'];
-                  ?>
-                </a>
-              </li>
-            <?php   } ?>
-
-          </ul>
         </div>
       </div>
 
@@ -201,28 +140,26 @@ if (isset($_REQUEST['delete_id'])) {
                 <tr>
                   <th scope="col" class="text-center">Id</th>
                   <th scope="col" class="text-center">Name</th>
-                  <th scope="col" class="text-center">Price</th>
-                  <th scope="col" class="text-center">Qty</th>
-                  <th scope="col" class="text-center">Category</th>
+                  <th scope="col" class="text-center">Created By</th>
+                  <th scope="col" class="text-center">Created At</th>
                   <th scope="col" class="text-center w-25">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
-                while ($books = $select_books->fetch(PDO::FETCH_ASSOC)) { ?>
+                while ($select_categories = $select_category_list->fetch(PDO::FETCH_ASSOC)) { ?>
                   <tr>
-                    <th scope="row" class="text-center"><?php echo $books['id'] ?></th>
-                    <td class="text-center"><?php echo $books['name'] ?></td>
-                    <td class="text-center"><?php echo $books['price'] ?></td>
-                    <td class="text-center"><?php echo $books['qty'] ?></td>
-                    <td class="text-center"><?php echo $books['category'] ?></td>
+                    <th scope="row" class="text-center"><?php echo $select_categories['id'] ?></th>
+                    <td class="text-center"><?php echo $select_categories['category'] ?></td>
+                    <td class="text-center"><?php echo $select_categories['username'] ?></td>
+                    <td class="text-center"><?php echo $select_categories['createdAt'] ?></td>
                     <td class="text-center">
                       <div class="row m-0">
                         <div class="col-12 col-lg-6 px-3 mb-2 mb-lg-0">
-                          <a href="edit_book.php?id=<?php echo $books['id'] ?>" class="btn btn-warning w-100">Edit</a>
+                          <a href="edit_book.php?id=<?php echo $select_categories['id'] ?>" class="btn btn-warning w-100">Edit</a>
                         </div>
                         <div class="col-12 col-lg-6 px-3">
-                          <a href="?delete_id=<?php echo $books['id'] ?>" class="btn btn-danger w-100">Delete</a>
+                          <a href="?delete_id=<?php echo $select_categories['id'] ?>" class="btn btn-danger w-100">Delete</a>
                         </div>
                       </div>
                     </td>

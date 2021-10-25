@@ -19,37 +19,37 @@ if (empty($_POST['page'])) {
   $start_index = ($page - 1) * $limit;
 }
 
-if (isset($_REQUEST['id'])) {
+if (isset($_GET['id'])) {
   try {
-    $id = $_REQUEST['id'];
-    $select_books = $db->prepare("SELECT b.id , b.name , b.qty , b.price , c.name as category FROM books as b LEFT JOIN categories as c ON b.category = c.id WHERE c.id = :id LIMIT :start_index,:limit");
-    $select_books->bindParam(':id', $id);
-    $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
-    $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
-    $select_books->execute();
+    $id = $_GET['id'];
+    $select_user_list = $db->prepare("SELECT u.id , u.username , u.email , mr.name as role , u.createdAt FROM `user_info` as u LEFT JOIN master_role as mr ON u.role = mr.id WHERE mr.id = :id  LIMIT :start_index,:limit");
+    $select_user_list->bindParam(':id', $id);
+    $select_user_list->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
+    $select_user_list->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
+    $select_user_list->execute();
 
     // Pagination
-    $count_books = $db->prepare("SELECT count(b.id) from `books` as b LEFT JOIN categories as c ON b.category = c.id WHERE c.id = :id ");
-    $count_books->bindParam(':id', $id);
-    $count_books->execute();
-    $count = $count_books->fetch(PDO::FETCH_ASSOC);
+    $count_user_list = $db->prepare("SELECT count(u.id)  FROM `user_info` as u LEFT JOIN master_role as mr ON u.role = mr.id WHERE mr.id = :id ");
+    $count_user_list->bindParam(':id', $id);
+    $count_user_list->execute();
+    $count = $count_user_list->fetch(PDO::FETCH_ASSOC);
     foreach ($count as $key => $value) {
       $total_page =  ceil($value / $limit);
     }
   } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
   }
-} else if (empty($_REQUEST['id'])) {
+} else if (empty($_GET['id'])) {
   try {
-    $select_books = $db->prepare("SELECT b.id , b.name , b.qty , b.price , c.name as category FROM books as b LEFT JOIN categories as c ON b.category = c.id LIMIT :start_index,:limit");
-    $select_books->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
-    $select_books->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
-    $select_books->execute();
+    $select_user_list = $db->prepare("SELECT u.id , u.username , u.email , mr.name as role , u.createdAt FROM `user_info` as u LEFT JOIN master_role as mr ON u.role = mr.id LIMIT :start_index,:limit");
+    $select_user_list->bindValue(':start_index', intval($start_index),  PDO::PARAM_INT);
+    $select_user_list->bindValue(':limit', intval($limit),  PDO::PARAM_INT);
+    $select_user_list->execute();
 
     // Pagination
-    $count_books = $db->prepare("SELECT count(b.id) from `books` as b LEFT JOIN categories as c ON b.category = c.id ");
-    $count_books->execute();
-    $count = $count_books->fetch(PDO::FETCH_ASSOC);
+    $count_user_list = $db->prepare("SELECT count(id) from `user_info` ");
+    $count_user_list->execute();
+    $count = $count_user_list->fetch(PDO::FETCH_ASSOC);
     foreach ($count as $key => $value) {
       $total_page =  ceil($value / $limit);
     }
@@ -62,21 +62,11 @@ if (isset($_REQUEST['delete_id'])) {
   try {
     $id = $_REQUEST['delete_id'];
 
-    $path_image = $db->prepare("SELECT image FROM books WHERE id = :id");
-    $path_image->bindParam(":id", $id);
-    $path_image->execute();
-    $image_path = $path_image->fetch(PDO::FETCH_ASSOC);
-
-    if (isset($image_path['image'])) {
-      $path = "upload/" .  $image_path['image']; // set delete folder path
-      unlink($path);
-    }
-
-    $delete_id = $db->prepare("DELETE FROM books WHERE id = :id");
+    $delete_id = $db->prepare("DELETE FROM user_info WHERE id = :id");
     $delete_id->bindParam(":id", $id);
     if ($delete_id->execute()) {
       $_SESSION['success'] = "Delete Book Successfully...";
-      header("refresh:2;book_list.php");
+      header("refresh:2;user_list.php");
       // header('location: book_list.php');
     };
   } catch (PDOException $e) {
@@ -92,7 +82,7 @@ if (isset($_REQUEST['delete_id'])) {
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Page</title>
+  <title>Users Page</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 </head>
 
@@ -157,31 +147,28 @@ if (isset($_REQUEST['delete_id'])) {
 
     <div class="row m-0 mt-3">
       <div class="col-md-2">
-        <a href="add_book.php" class="btn btn-success w-100 mb-2">Add Book</a>
-
-        <a href="category_list.php" class="btn btn-warning w-100 mb-2">Category List</a>
         <div class="border border-2 border-light">
           <ul class="list-group">
-            <li class="list-group-item text-center"><b>Categories</b></li>
+            <li class="list-group-item text-center"><b>Role</b></li>
             <li class="list-group-item <?php
                                         if (empty($_REQUEST['id'])) {
                                           echo "active";
                                         }
                                         ?>  text-center">
-              <a class="nav-link  p-0 text-dark" aria-current="page" href="book_list.php">
+              <a class="nav-link  p-0 text-dark" aria-current="page" href="user_list.php">
                 All
               </a>
             </li>
 
             <?php
-            $select_categories = $db->prepare("SELECT id ,name FROM categories");
-            $select_categories->execute();
+            $select_master_role = $db->prepare("SELECT id ,name FROM master_role");
+            $select_master_role->execute();
 
-            while ($row = $select_categories->fetch(PDO::FETCH_ASSOC)) { ?>
+            while ($row = $select_master_role->fetch(PDO::FETCH_ASSOC)) { ?>
               <li class="list-group-item <?php if ($id == $row['id']) {
                                             echo "active";
                                           }  ?> text-center nav-item">
-                <a class="nav-link  p-0 text-dark" href="book_list.php?id=<?php echo $row['id']; ?>">
+                <a class="nav-link  p-0 text-dark" href="user_list.php?id=<?php echo $row['id']; ?>">
                   <?php
                   echo $row['name'];
                   ?>
@@ -200,29 +187,34 @@ if (isset($_REQUEST['delete_id'])) {
               <thead>
                 <tr>
                   <th scope="col" class="text-center">Id</th>
-                  <th scope="col" class="text-center">Name</th>
-                  <th scope="col" class="text-center">Price</th>
-                  <th scope="col" class="text-center">Qty</th>
-                  <th scope="col" class="text-center">Category</th>
+                  <th scope="col" class="text-center">Username</th>
+                  <th scope="col" class="text-center">Email</th>
+                  <th scope="col" class="text-center">Role</th>
+                  <th scope="col" class="text-center">CreatedAt</th>
                   <th scope="col" class="text-center w-25">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
-                while ($books = $select_books->fetch(PDO::FETCH_ASSOC)) { ?>
+                while ($users = $select_user_list->fetch(PDO::FETCH_ASSOC)) { ?>
                   <tr>
-                    <th scope="row" class="text-center"><?php echo $books['id'] ?></th>
-                    <td class="text-center"><?php echo $books['name'] ?></td>
-                    <td class="text-center"><?php echo $books['price'] ?></td>
-                    <td class="text-center"><?php echo $books['qty'] ?></td>
-                    <td class="text-center"><?php echo $books['category'] ?></td>
+                    <th scope="row" class="text-center"><?php echo $users['id'] ?></th>
+                    <td class="text-center"><?php echo $users['username'] ?></td>
+                    <td class="text-center"><?php echo $users['email'] ?></td>
+                    <td class="text-center"><?php echo $users['role'] ?></td>
+                    <td class="text-center">
+                      <?php
+                      $date = date_create($users['createdAt']);
+                      echo date_format($date, "d/m/Y");
+                      ?>
+                    </td>
                     <td class="text-center">
                       <div class="row m-0">
                         <div class="col-12 col-lg-6 px-3 mb-2 mb-lg-0">
-                          <a href="edit_book.php?id=<?php echo $books['id'] ?>" class="btn btn-warning w-100">Edit</a>
+                          <a href="edit_user.php?id=<?php echo $users['id'] ?>" class="btn btn-warning w-100">Edit</a>
                         </div>
                         <div class="col-12 col-lg-6 px-3">
-                          <a href="?delete_id=<?php echo $books['id'] ?>" class="btn btn-danger w-100">Delete</a>
+                          <a href="?delete_id=<?php echo $users['id'] ?>" class="btn btn-danger w-100">Delete</a>
                         </div>
                       </div>
                     </td>
@@ -250,6 +242,7 @@ if (isset($_REQUEST['delete_id'])) {
 
         </div>
       </div>
+
     </div>
 
 
